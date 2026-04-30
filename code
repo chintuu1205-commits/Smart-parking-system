@@ -1,0 +1,140 @@
++This project implements a Smart Parking System using Arduino and IR sensors to detect vehicle availability and display slot status.
+// ALFIAN CENTER
+// SUBSCRIBE
+// SMART GATE + SMART PARKING
+// PROGRAM BAKAL DI SHARE KALO LIKE TEMBUS 50 DAN KOMEN 20
+// ATAU BISA KIRIM EMAIL VIA KOMENTAR
+// =============== =============
+3033
+#include <Wire.h>
+#include <Servo.h>
+#include <U8g2lib.h>
+// === OLED 0.96" I2C ===
+U8G2 SSD1306_128X64_NONAME_F_HW_I2C oled (U8G2_Re, USX8_PIN_NONE);
+// Servo & LED
+Servo gateIn;
+Servo gateOut;
+#define LED PIN 11
+// === Sensor Ultrasonik ===
+#define TRIG IN 2
+#define ECHO_IN 3
+#define TRIG OUT 4
+#define ECHO_OUT 5
+// Konfigurasi
+int TOTAL_SLOTS = 10; // jumlah total slot (ubah sesuai kebutuhan)
+int availableSlots = TOTAL SLOTS;
+#define DIST GATE 80 // jarak trigger buka gate (cm)
+#define DIST PASS 100 // jarak saat mobil sudah lewat (cm)
+unsigned long gateDelay = 200;
+// ===Status ===
+bool gateInOpen ■ false;
+bool gateOutOpen = false;
+unsigned long lastDisplay = 0;
+unsigned long gateDelay = 200;
+// ===Status ===
+bool gateInOpen = false;
+bool gateOutOpen = false;
+unsigned long lastDisplay = 0;
+//===Fungsi Baca Ultrasonik ===
+long readDistanceCM(int trig, int echo) {
+digitalWrite(trig, LOW);
+delayMicroseconds(2);
+digitalWrite(trig, HIGH);
+delayMicroseconds(10);
+digitalWrite(trig, LOW);
+long duration = pulseIn(echo, HIGH, 25000);
+long distance duration 0.034 / 2;
+return distance == ? 999 distance;
+}
+//===Gambar indikator mobil (bar progress)
+void drawParkingBar(int total, int available) {
+int used total - available;
+int barWidth = 100; // lebar total bar
+int barHeight = 10; // tinggi bar
+int x = 10;
+int y = 50;
+oled.drawFrame(x2, y2, barWidth +4, barHeight + 4);
+// Lebar tiap slot
+float segmentWidth = (float) barWidth / total;
+// Gambar bar isi berdasarkan slot terisi
+for (int i = 0; i < used; i++) {
+int segX x + (i segmentWidth);
+oled.drawBox (segx, y, segmentWidth 1, barHeight);
+I
+// === Tampilan OLED ===
+void drawDisplay() {
+oled.clearBuffer();
+oled.setFont(u8g2_font_6x10_tr);
+//oled.setCursor(0, 10);
+//oled.print(F("SMART PARKING MINI"));
+oled.setCursor(0, 25);
+oled.print("Total Slot: ");
+oled.print(TOTAL_SLOTS);
+oled.setCursor(0, 38);
+oled.print("Tersisa :");
+oled.print (availableSlots);
+// === Bar pengisian slot ===
+drawParkingBar (TOTAL_SLOTS, availableSlots);
+// === LED indikator ===
+if (availableSlots == 0) {
+oled.setCursor(0, 10);
+oled.print(F("STATUS: PENUH"));
+digitalWrite(LED_PIN, HIGH);
+} else {
+digitalWrite(LED_PIN, HIGH);
+} else {
+oled.setCursor(0, 10);
+oled.print(F("STATUS: TERSEDIA"));
+digitalWrite(LED_PIN, LOW);
+}
+oled.sendBuffer();
+}
+// === Setup awal ===
+void setup() {
+pinMode(TRIG_IN, OUTPUT);
+pinMode(ECHO_IN, INPUT);
+pinMode(TRIG_OUT, OUTPUT);
+pinMode(ECHO_OUT, INPUT);
+pinMode(LED_PIN, OUTPUT); I
+gateIn.attach(9);
+gateOut.attach(10);
+gateIn.write(0);
+gateOut.write(0);
+oled.begin();
+oled.clearBuffer();
+oled.setFont(u8g2_font_6x10_tr);
+oled.drawStr(0, 30, "Smart Parking Init...");
+oled.sendBuffer();
+delay(1500);
+}
+// ===Loop utama ===
+void loop() {
+long distIn readDistanceCM (TRIG_IN, ECHO_IN);
+long distOut = readDistanceCM (TRIG_OUT, ECHO_OUT);
+//===Mobil Masuk ===
+if (distIn <DIST_GATE && availableSlots > 0 && !gateInOpen) {
+gateIn.write(90);
+gateInOpen true;
+}
+if (gateInOpen && distIn > DIST_PASS) {
+gateIn.write(0);
+gateInOpen false;
+if (availableSlots > 0) availableSlots--;
+}
+// ===Mobil Keluar ===
+if (distOut <DIST_GATE && availableSlots < TOTAL_SLOTS && !gateOutOpen)
+gateOut.write(90);
+gateOutOpen = true;
+}
+if (gateOutOpen && distOut > DIST_PASS) {
+gateOut.write(0);
+gateOutOpen = false;
+if (availableSlots <TOTAL_SLOTS) availableSlots++;
+}
+// === Update OLED ===
+if (millis() lastDisplay >500) {
+drawDisplay();
+lastDisplay millis();
+}
+delay(100);
+}
